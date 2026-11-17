@@ -4,11 +4,13 @@
 #   python3 cc.py pick DATA_DIR CRAWL SEED N    # e.g. ~/git/commoncrawl/cc-data CC-MAIN-2026-39 1234 12
 #   python3 cc.py download DATA_DIR CRAWL SEED N
 # pick writes DATA_DIR/CRAWL/picked-seed-SEED.txt (first N paths of the seeded order; a larger N
-# extends the same order); download fetches the first N of those that aren't there yet.
+# extends the same order); download fetches the first N of those that aren't there yet, or exits
+# without fetching if they wouldn't fit with 10 GB to spare.
 # Crawls: https://index.commoncrawl.org/collinfo.json. Import html_responses() to iterate.
-import gzip, hashlib, os, re, subprocess, sys
+import gzip, hashlib, os, re, shutil, subprocess, sys
 
 BASE = 'https://data.commoncrawl.org/'
+WARC_BYTES, MIN_FREE = 1.2e9, 10e9  # per WARC (upper end), and space to leave free
 
 
 def paths_file(data_dir, crawl):
@@ -32,10 +34,15 @@ def pick(data_dir, crawl, seed, n):
 
 
 def download(data_dir, crawl, seed, n):
-    for p in pick(data_dir, crawl, seed, n):
+    missing = [p for p in pick(data_dir, crawl, seed, n)
+               if not os.path.exists(os.path.join(data_dir, crawl, os.path.basename(p)))]
+    need = len(missing) * WARC_BYTES + MIN_FREE
+    free = shutil.disk_usage(os.path.join(data_dir, crawl)).free
+    if free < need:
+        sys.exit(f'{len(missing)} WARCs need ~{need / 1e9:.1f} GB free (incl. {MIN_FREE / 1e9:.0f} GB margin); '
+                 f'{free / 1e9:.1f} GB free')
+    for p in missing:
         dest = os.path.join(data_dir, crawl, os.path.basename(p))
-        if os.path.exists(dest):
-            continue
         subprocess.run(['curl', '-sSf', '--retry', '5', '-o', dest + '.part', BASE + p], check=True)
         os.rename(dest + '.part', dest)
         print('downloaded', dest, flush=True)

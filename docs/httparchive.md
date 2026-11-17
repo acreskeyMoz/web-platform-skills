@@ -34,7 +34,8 @@ pages. Firefox has its own counters too.
 URLs (not only home pages) and publishes the raw responses as WARC files anyone can download, free
 and without an account. It has no popularity ranks or use counters, only the responses. The skill
 uses a random sample of WARCs (12 files, about 12 GB and 250k pages) to try out searches for free
-before spending money on HTTP Archive.
+before spending money on HTTP Archive. It asks before downloading the first sample or extending it
+for a rare pattern, and offers to delete the extension when done.
 
 ## How a research run goes
 
@@ -156,7 +157,7 @@ QA runs made with the `httparchive-qa` skill:
   and Safari can't be emulated the same way: the agent can approximate Firefox on desktop with
   prefs, or drive Firefox for Android on a device or emulator; for WebKit it uses Safari in the iOS
   Simulator, which needs Xcode with an iOS runtime installed (release Safari, not TP).
-- Optionally, disk space for Common Crawl WARCs (about 1 GB each).
+- Optionally, disk space for Common Crawl WARCs (about 1 GB each; more than 12 only for rare patterns).
 
 ## Limits
 
